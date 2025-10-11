@@ -1,0 +1,21 @@
+# Core dependencies
+pandas>=2.0.0
+numpy>=1.24.0
+scipy>=1.10.0
+statsmodels>=0.14.0
+yfinance>=0.2.30
+matplotlib>=3.7.0
+seaborn>=0.12.2
+PyYAML>=6.0
+
+# Web interface
+Flask>=2.3.0
+
+# Testing & development
+pytest>=7.3.0
+black>=23.0.0
+flake8>=6.0.0
+
+# Optional enhancements
+tqdm>=4.65.0      # progress bars
+tabulate>=0.9.0   # table display for CLI
