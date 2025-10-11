@@ -1,229 +1,452 @@
+#!/usr/bin/env python3
+"""
+Statistical Arbitrage Pairs Trading System
+Main entry point with CLI interface
+"""
+
+import argparse
+import logging
+import sys
+from pathlib import Path
+from datetime import datetime
+import json
 import pandas as pd
-import numpy as np
-import yfinance as yf
-import statsmodels.api as sm
-from statsmodels.tsa.stattools import coint
-import matplotlib.pyplot as plt
-import seaborn as sns
+import warnings
 
-# --- Phase 1: Setup and Data Collection (with Data Cleaning) ---
+warnings.filterwarnings('ignore')
 
-# Define Your Universe and Timeframe
-# Using a smaller subset of NASDAQ 100 for faster execution in this example.
-# You can expand this list with all NASDAQ 100 or S&P 100 tickers.
-UNIVERSE = [
-    'MSFT', 'AAPL', 'GOOG', 'AMZN', 'NVDA', 'META', 'TSLA',
-    'PEP', 'COST', 'ADBE', 'CSCO', 'AVGO', 'QCOM', 'INTC'
-]
-IN_SAMPLE_START = '2018-01-01'
-IN_SAMPLE_END = '2022-12-31'
-OUT_OF_SAMPLE_START = '2023-01-01'
-OUT_OF_SAMPLE_END = '2025-10-10'  # Use a recent date
-
-print("Phase 1: Downloading historical stock data...")
-# Download closing prices
-all_data = yf.download(UNIVERSE, start=IN_SAMPLE_START, end=OUT_OF_SAMPLE_END)['Close']
-
-# --- START OF DATA CLEANING ---
-print("Cleaning data...")
-
-# 1. Check for initial missing values
-print(f"Initial missing values:\n{all_data.isnull().sum()[all_data.isnull().sum() > 0]}")
-
-# 2. Replace any zero values with NaN so they can be filled
-all_data.replace(0, np.nan, inplace=True)
-
-# 3. Forward-fill missing values
-all_data.fillna(method='ffill', inplace=True)
-
-# 4. Drop any remaining NaN rows (usually at the very beginning of the data)
-all_data.dropna(inplace=True)
-
-print("Data cleaning complete.")
-# --- END OF DATA CLEANING ---
+# Import custom modules
+from src.config import Config
+from src.data_handler import DataHandler
+from src.pair_finder import PairFinder
+from src.backtester import Backtester
+from src.performance import PerformanceAnalyzer
 
 
-# Split data into in-sample and out-of-sample periods
-in_sample_data = all_data.loc[IN_SAMPLE_START:IN_SAMPLE_END]
-out_of_sample_data = all_data.loc[OUT_OF_SAMPLE_START:OUT_OF_SAMPLE_END]
+def setup_logging(log_level='INFO', log_file=None):
+    """Configure logging for the application"""
+    log_format = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 
-print(f"Data ready. In-sample period: {in_sample_data.shape[0]} days. Out-of-sample period: {out_of_sample_data.shape[0]} days.")
-print("-" * 50)
+    handlers = [logging.StreamHandler(sys.stdout)]
 
-# ... (The rest of your script for Phase 2, 3, 4, 5) ...
+    if log_file:
+        log_dir = Path('logs')
+        log_dir.mkdir(exist_ok=True)
+        file_handler = logging.FileHandler(log_dir / log_file)
+        handlers.append(file_handler)
+
+    logging.basicConfig(
+        level=getattr(logging, log_level.upper()),
+        format=log_format,
+        handlers=handlers
+    )
+
+    return logging.getLogger(__name__)
 
 
-# --- Phase 2: Finding Co-integrated Pairs ---
+def find_pairs_command(args, config, logger):
+    """Execute pair finding command"""
+    logger.info("Starting pair finding process...")
 
-def find_cointegrated_pairs(data, significance_level=0.05):
-    """
-    Iterates through all possible pairs of stocks and tests for co-integration.
-    """
-    n = data.shape[1]
-    keys = data.columns
-    pairs = []
+    # Initialize data handler
+    data_handler = DataHandler(
+        cache_dir=Path(config.data['cache_dir']),
+        data_source=config.data['source']
+    )
 
-    # Iterate through all unique pairs
-    for i in range(n):
-        for j in range(i + 1, n):
-            stock1 = data[keys[i]]
-            stock2 = data[keys[j]]
+    # Load data
+    logger.info(f"Loading data for symbols: {config.symbols}")
+    data = data_handler.load_data(
+        symbols=config.symbols,
+        start_date=args.start_date or config.backtest['start_date'],
+        end_date=args.end_date or config.backtest['end_date']
+    )
 
-            # Run the Engle-Granger co-integration test
-            result = coint(stock1, stock2)
-            pvalue = result[1]
+    # Initialize pair finder
+    pair_finder = PairFinder(
+        min_correlation=config.pair_selection['min_correlation'],
+        max_correlation=config.pair_selection['max_correlation'],
+        min_cointegration=config.pair_selection['min_cointegration'],
+        lookback_period=config.pair_selection['lookback_period']
+    )
 
-            # If p-value is below our threshold, we consider the pair co-integrated
-            if pvalue < significance_level:
-                pairs.append((keys[i], keys[j], pvalue))
+    # Find pairs
+    logger.info("Analyzing potential pairs...")
+    pairs = pair_finder.find_pairs(data)
+
+    if pairs.empty:
+        logger.warning("No suitable pairs found with current criteria")
+        return
+
+    # Display results
+    print("\n" + "=" * 80)
+    print("STATISTICAL ARBITRAGE PAIRS FOUND")
+    print("=" * 80)
+
+    for idx, row in pairs.iterrows():
+        print(f"\nPair {idx + 1}: {row['pair']}")
+        print("-" * 40)
+        print(f"  Correlation:     {row['correlation']:.4f}")
+        print(f"  Cointegration:   {row['cointegration_pvalue']:.4f}")
+        print(f"  Half-life:       {row['half_life']:.2f} days")
+        print(f"  Hurst Exponent:  {row['hurst_exponent']:.4f}")
+        print(f"  Score:           {row['score']:.4f}")
+
+    # Save results if requested
+    if args.output:
+        output_path = Path('results') / args.output
+        output_path.parent.mkdir(exist_ok=True)
+        pairs.to_csv(output_path, index=False)
+        logger.info(f"Results saved to {output_path}")
 
     return pairs
 
 
-print("Phase 2: Finding co-integrated pairs using in-sample data...")
-cointegrated_pairs = find_cointegrated_pairs(in_sample_data)
+def backtest_command(args, config, logger):
+    """Execute backtesting command"""
+    logger.info("Starting backtesting process...")
 
-if not cointegrated_pairs:
-    print(
-        "No co-integrated pairs found with the given significance level. Try a larger universe or different timeframe.")
-else:
-    # Sort pairs by the lowest p-value
-    cointegrated_pairs.sort(key=lambda x: x[2])
-    print(f"Found {len(cointegrated_pairs)} co-integrated pairs. Top 5:")
-    for pair in cointegrated_pairs[:5]:
-        print(f"  - Pair: ({pair[0]}, {pair[1]}), P-value: {pair[2]:.4f}")
-print("-" * 50)
+    # Initialize data handler
+    data_handler = DataHandler(
+        cache_dir=Path(config.data['cache_dir']),
+        data_source=config.data['source']
+    )
 
-# --- Phase 3 & 4: Develop Logic and Backtest ---
+    # Determine which pairs to test
+    pairs_to_test = []
 
-# Let's select the best pair (lowest p-value) for our backtest
-if cointegrated_pairs:
-    best_pair = cointegrated_pairs[0]
-    stock1_ticker = best_pair[0]
-    stock2_ticker = best_pair[1]
-    print(f"Phase 3 & 4: Backtesting the best pair: ({stock1_ticker}, {stock2_ticker})")
+    if args.pair:
+        # Test specific pair
+        pairs_to_test = [tuple(args.pair)]
+        logger.info(f"Testing specific pair: {args.pair}")
+    elif args.pairs_file:
+        # Load pairs from file
+        pairs_df = pd.read_csv(args.pairs_file)
+        pairs_to_test = [tuple(pair.split('-')) for pair in pairs_df['pair'].values]
+        logger.info(f"Loaded {len(pairs_to_test)} pairs from {args.pairs_file}")
+    else:
+        # Find pairs automatically
+        logger.info("No pairs specified, finding pairs automatically...")
+        data = data_handler.load_data(
+            symbols=config.symbols,
+            start_date=args.start_date or config.backtest['start_date'],
+            end_date=args.end_date or config.backtest['end_date']
+        )
 
-    # --- Develop Logic on IN-SAMPLE data ---
-    in_sample_s1 = in_sample_data[stock1_ticker]
-    in_sample_s2 = in_sample_data[stock2_ticker]
+        pair_finder = PairFinder(
+            min_correlation=config.pair_selection['min_correlation'],
+            max_correlation=config.pair_selection['max_correlation'],
+            min_cointegration=config.pair_selection['min_cointegration'],
+            lookback_period=config.pair_selection['lookback_period']
+        )
 
-    # Calculate hedge ratio using linear regression (OLS)
-    model = sm.OLS(in_sample_s1, sm.add_constant(in_sample_s2)).fit()
-    hedge_ratio = model.params[1]
+        pairs_df = pair_finder.find_pairs(data)
 
-    # Calculate the spread for the in-sample period
-    in_sample_spread = in_sample_s1 - hedge_ratio * in_sample_s2
+        if pairs_df.empty:
+            logger.error("No suitable pairs found")
+            return
 
-    # Calculate the mean and std dev of the in-sample spread
-    spread_mean = in_sample_spread.mean()
-    spread_std = in_sample_spread.std()
+        # Use top N pairs
+        n_pairs = min(args.top_pairs or 5, len(pairs_df))
+        pairs_to_test = [tuple(pair.split('-')) for pair in pairs_df.head(n_pairs)['pair'].values]
+        logger.info(f"Selected top {n_pairs} pairs for backtesting")
 
-    print(f"Trading logic parameters from in-sample data:")
-    print(f"  - Hedge Ratio: {hedge_ratio:.4f}")
-    print(f"  - Spread Mean: {spread_mean:.4f}")
-    print(f"  - Spread Std Dev: {spread_std:.4f}")
+    # Run backtests
+    all_results = []
 
-    # --- Backtest on OUT-OF-SAMPLE data ---
-    out_sample_s1 = out_of_sample_data[stock1_ticker]
-    out_sample_s2 = out_of_sample_data[stock2_ticker]
+    for symbol1, symbol2 in pairs_to_test:
+        logger.info(f"\nBacktesting pair: {symbol1}-{symbol2}")
 
-    # Calculate the spread for the out-of-sample period
-    out_sample_spread = out_sample_s1 - hedge_ratio * out_sample_s2
+        # Load data for the pair
+        data = data_handler.load_data(
+            symbols=[symbol1, symbol2],
+            start_date=args.start_date or config.backtest['start_date'],
+            end_date=args.end_date or config.backtest['end_date']
+        )
 
-    # Calculate the Z-score for the out-of-sample spread
-    # IMPORTANT: Use the mean and std from the IN-SAMPLE period
-    z_score = (out_sample_spread - spread_mean) / spread_std
+        # Initialize backtester
+        backtester = Backtester(
+            initial_capital=config.backtest['initial_capital'],
+            max_position_size=config.position_sizing['max_position_size'],
+            transaction_cost=config.execution['transaction_cost'],
+            slippage=config.execution['slippage']
+        )
 
-    # Define trading thresholds
-    entry_threshold = 2.0
-    exit_threshold = 0.5  # Exit when it gets close to the mean
-    stop_loss_threshold = 3.0
+        # Run backtest
+        results = backtester.run_backtest(
+            symbol1=symbol1,
+            symbol2=symbol2,
+            data=data,
+            entry_threshold=config.strategy['entry_z_score'],
+            exit_threshold=config.strategy['exit_z_score'],
+            stop_loss_threshold=config.strategy['stop_loss_z_score'],
+            lookback_period=config.strategy['lookback_period']
+        )
 
-    # Initialize portfolio
-    initial_capital = 100000
-    cash = initial_capital
-    position = 0  # -1 for short spread, 1 for long spread, 0 for no position
-    portfolio_value = []
+        all_results.append(results)
 
-    # Simulate trading
-    for i in range(len(z_score)):
-        current_z = z_score.iloc[i]
+        # Display summary
+        print(f"\n{'=' * 60}")
+        print(f"BACKTEST RESULTS: {symbol1}-{symbol2}")
+        print(f"{'=' * 60}")
+        print(f"Total Return:        {results['total_return']:.2%}")
+        print(f"Annualized Return:   {results['annualized_return']:.2%}")
+        print(f"Sharpe Ratio:        {results['sharpe_ratio']:.2f}")
+        print(f"Max Drawdown:        {results['max_drawdown']:.2%}")
+        print(f"Win Rate:            {results['win_rate']:.2%}")
+        print(f"Total Trades:        {results['total_trades']}")
 
-        # Entry Logic
-        if position == 0:
-            if current_z > entry_threshold:
-                position = -1  # Short the spread (Short S1, Long S2)
-            elif current_z < -entry_threshold:
-                position = 1  # Long the spread (Long S1, Short S2)
+    # Aggregate results if multiple pairs
+    if len(all_results) > 1:
+        print(f"\n{'=' * 60}")
+        print("PORTFOLIO SUMMARY")
+        print(f"{'=' * 60}")
 
-        # Exit and Stop-Loss Logic
-        elif position == -1:  # Currently short spread
-            if current_z < exit_threshold or current_z > stop_loss_threshold:
-                position = 0  # Close position
-        elif position == 1:  # Currently long spread
-            if current_z > -exit_threshold or current_z < -stop_loss_threshold:
-                position = 0  # Close position
+        avg_return = sum(r['total_return'] for r in all_results) / len(all_results)
+        avg_sharpe = sum(r['sharpe_ratio'] for r in all_results) / len(all_results)
+        avg_win_rate = sum(r['win_rate'] for r in all_results) / len(all_results)
 
-        # This is a simplified P&L calculation. A real backtest would track shares.
-        # Here we just track capital based on daily spread changes when in a position.
-        if position != 0:
-            # Approximate daily P&L
-            daily_pnl = position * (
-                        out_sample_spread.iloc[i] - out_sample_spread.iloc[i - 1]) * 100  # *100 is position size
-            cash += daily_pnl
+        print(f"Average Return:      {avg_return:.2%}")
+        print(f"Average Sharpe:      {avg_sharpe:.2f}")
+        print(f"Average Win Rate:    {avg_win_rate:.2%}")
 
-        portfolio_value.append(cash)
+    # Save results if requested
+    if args.output:
+        output_path = Path('results') / args.output
+        output_path.parent.mkdir(exist_ok=True)
 
-    backtest_results = pd.DataFrame({'portfolio_value': portfolio_value}, index=out_of_sample_data.index)
+        # Convert results to DataFrame for saving
+        results_df = pd.DataFrame(all_results)
+        results_df.to_csv(output_path, index=False)
+        logger.info(f"Results saved to {output_path}")
 
-    print("Backtest complete.")
-    print("-" * 50)
+    return all_results
 
-    # --- Phase 5: Performance Analysis ---
-    print("Phase 5: Analyzing performance...")
 
-    # Calculate metrics
-    total_return = (backtest_results['portfolio_value'].iloc[-1] / initial_capital) - 1
-    daily_returns = backtest_results['portfolio_value'].pct_change().dropna()
-    annualized_return = daily_returns.mean() * 252
-    annualized_volatility = daily_returns.std() * np.sqrt(252)
-    sharpe_ratio = annualized_return / annualized_volatility
+def analyze_command(args, config, logger):
+    """Execute performance analysis command"""
+    logger.info("Starting performance analysis...")
 
-    # Calculate max drawdown
-    running_max = backtest_results['portfolio_value'].cummax()
-    drawdown = (backtest_results['portfolio_value'] - running_max) / running_max
-    max_drawdown = drawdown.min()
+    # Load backtest results
+    if not args.results_file:
+        logger.error("Please specify a results file with --results-file")
+        return
 
-    print(f"Total Return: {total_return:.2%}")
-    print(f"Annualized Return: {annualized_return:.2%}")
-    print(f"Sharpe Ratio: {sharpe_ratio:.2f}")
-    print(f"Maximum Drawdown: {max_drawdown:.2%}")
+    results_path = Path(args.results_file)
+    if not results_path.exists():
+        logger.error(f"Results file not found: {results_path}")
+        return
 
-    # Visualize results
-    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(12, 10), sharex=True, gridspec_kw={'height_ratios': [3, 2]})
+    # Load the results
+    if results_path.suffix == '.csv':
+        results_df = pd.read_csv(results_path)
+        # Convert string representation back to proper format if needed
+        results = results_df.to_dict('records')
+    elif results_path.suffix == '.json':
+        with open(results_path, 'r') as f:
+            results = json.load(f)
+    else:
+        logger.error("Results file must be .csv or .json format")
+        return
 
-    # Plot 1: Equity Curve
-    ax1.plot(backtest_results['portfolio_value'], label='Portfolio Value')
-    ax1.set_title(f'Strategy Equity Curve for ({stock1_ticker}, {stock2_ticker})')
-    ax1.set_ylabel('Portfolio Value ($)')
-    ax1.legend()
-    ax1.grid(True)
+    # Initialize performance analyzer
+    analyzer = PerformanceAnalyzer()
 
-    # Plot 2: Z-Score with trading thresholds
-    ax2.plot(z_score, label='Z-Score')
-    ax2.axhline(entry_threshold, color='r', linestyle='--', label='Short Entry')
-    ax2.axhline(-entry_threshold, color='g', linestyle='--', label='Long Entry')
-    ax2.axhline(exit_threshold, color='orange', linestyle=':', label='Exit Threshold (Short)')
-    ax2.axhline(-exit_threshold, color='orange', linestyle=':', label='Exit Threshold (Long)')
-    ax2.axhline(0, color='black', linestyle='-')
-    ax2.set_title('Spread Z-Score')
-    ax2.set_ylabel('Z-Score')
-    ax2.set_xlabel('Date')
-    ax2.legend()
-    ax2.grid(True)
+    # Analyze results
+    if isinstance(results, list) and len(results) > 0:
+        if 'equity_curve' in results[0]:
+            # Single backtest result with equity curve
+            analysis = analyzer.analyze_backtest(results[0])
 
-    plt.tight_layout()
-    plt.show()
+            # Generate report
+            if args.report_type == 'detailed' or args.report_type == 'all':
+                report = analyzer.generate_report(analysis)
+                print("\n" + report)
 
-else:
-    print("Cannot proceed to backtesting as no co-integrated pairs were found.")
+            # Generate plots if requested
+            if args.plot or args.report_type == 'all':
+                logger.info("Generating performance plots...")
+                analyzer.plot_performance(analysis)
+        else:
+            # Multiple backtest summaries
+            logger.info(f"Analyzing {len(results)} backtest results...")
+
+            # Create comparison report
+            print(f"\n{'=' * 80}")
+            print("PERFORMANCE COMPARISON")
+            print(f"{'=' * 80}\n")
+
+            # Sort by total return
+            results_sorted = sorted(results, key=lambda x: x.get('total_return', 0), reverse=True)
+
+            for i, result in enumerate(results_sorted, 1):
+                pair = result.get('pair', f"Pair {i}")
+                print(f"{i}. {pair}")
+                print(f"   Return: {result.get('total_return', 0):.2%}")
+                print(f"   Sharpe: {result.get('sharpe_ratio', 0):.2f}")
+                print(f"   MaxDD:  {result.get('max_drawdown', 0):.2%}")
+                print(f"   Trades: {result.get('total_trades', 0)}")
+                print()
+    else:
+        logger.error("No valid results found in file")
+
+
+def optimize_command(args, config, logger):
+    """Execute parameter optimization command"""
+    logger.info("Starting parameter optimization...")
+
+    # This is a placeholder for optimization functionality
+    # You could implement grid search, random search, or Bayesian optimization here
+
+    print("\n" + "=" * 60)
+    print("PARAMETER OPTIMIZATION")
+    print("=" * 60)
+    print("\nOptimization parameters:")
+    print(f"  Entry Z-Score range:    [{args.entry_min}, {args.entry_max}]")
+    print(f"  Exit Z-Score range:     [{args.exit_min}, {args.exit_max}]")
+    print(f"  Lookback period range:  [{args.lookback_min}, {args.lookback_max}]")
+    print(f"  Optimization method:    {args.method}")
+
+    logger.warning("Optimization feature is not yet implemented")
+    print("\nNote: Full optimization functionality coming soon!")
+
+
+def main():
+    """Main entry point"""
+    parser = argparse.ArgumentParser(
+        description='Statistical Arbitrage Pairs Trading System',
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Examples:
+  # Find pairs in default symbols
+  python main.py find-pairs
+
+  # Run backtest on specific pair
+  python main.py backtest --pair AAPL MSFT
+
+  # Run backtest on top 3 pairs with custom dates
+  python main.py backtest --top-pairs 3 --start-date 2022-01-01 --end-date 2023-12-31
+
+  # Analyze backtest results
+  python main.py analyze --results-file results/backtest_results.csv --plot
+
+  # Use custom configuration
+  python main.py --config configs/aggressive_config.yaml backtest
+        """
+    )
+
+    # Global arguments
+    parser.add_argument('--config', type=str, default='configs/default_config.yaml',
+                        help='Path to configuration file')
+    parser.add_argument('--log-level', type=str, default='INFO',
+                        choices=['DEBUG', 'INFO', 'WARNING', 'ERROR'],
+                        help='Logging level')
+    parser.add_argument('--log-file', type=str,
+                        help='Log file name (saved in logs/ directory)')
+
+    # Create subparsers for different commands
+    subparsers = parser.add_subparsers(dest='command', help='Available commands')
+
+    # Find pairs command
+    parser_find = subparsers.add_parser('find-pairs', help='Find cointegrated pairs')
+    parser_find.add_argument('--symbols', nargs='+',
+                             help='Override symbols from config')
+    parser_find.add_argument('--start-date', type=str,
+                             help='Start date (YYYY-MM-DD)')
+    parser_find.add_argument('--end-date', type=str,
+                             help='End date (YYYY-MM-DD)')
+    parser_find.add_argument('--output', type=str,
+                             help='Output CSV file for results')
+
+    # Backtest command
+    parser_backtest = subparsers.add_parser('backtest', help='Run backtesting')
+    parser_backtest.add_argument('--pair', nargs=2, metavar=('SYMBOL1', 'SYMBOL2'),
+                                 help='Specific pair to backtest')
+    parser_backtest.add_argument('--pairs-file', type=str,
+                                 help='CSV file containing pairs to backtest')
+    parser_backtest.add_argument('--top-pairs', type=int,
+                                 help='Number of top pairs to backtest')
+    parser_backtest.add_argument('--start-date', type=str,
+                                 help='Start date (YYYY-MM-DD)')
+    parser_backtest.add_argument('--end-date', type=str,
+                                 help='End date (YYYY-MM-DD)')
+    parser_backtest.add_argument('--output', type=str,
+                                 help='Output file for results')
+
+    # Analyze command
+    parser_analyze = subparsers.add_parser('analyze', help='Analyze backtest results')
+    parser_analyze.add_argument('--results-file', type=str, required=True,
+                                help='Path to backtest results file')
+    parser_analyze.add_argument('--report-type', type=str, default='summary',
+                                choices=['summary', 'detailed', 'all'],
+                                help='Type of report to generate')
+    parser_analyze.add_argument('--plot', action='store_true',
+                                help='Generate performance plots')
+
+    # Optimize command
+    parser_optimize = subparsers.add_parser('optimize', help='Optimize strategy parameters')
+    parser_optimize.add_argument('--pair', nargs=2, metavar=('SYMBOL1', 'SYMBOL2'),
+                                 help='Pair to optimize')
+    parser_optimize.add_argument('--method', type=str, default='grid',
+                                 choices=['grid', 'random', 'bayesian'],
+                                 help='Optimization method')
+    parser_optimize.add_argument('--entry-min', type=float, default=1.5,
+                                 help='Minimum entry z-score')
+    parser_optimize.add_argument('--entry-max', type=float, default=3.0,
+                                 help='Maximum entry z-score')
+    parser_optimize.add_argument('--exit-min', type=float, default=0.0,
+                                 help='Minimum exit z-score')
+    parser_optimize.add_argument('--exit-max', type=float, default=1.0,
+                                 help='Maximum exit z-score')
+    parser_optimize.add_argument('--lookback-min', type=int, default=20,
+                                 help='Minimum lookback period')
+    parser_optimize.add_argument('--lookback-max', type=int, default=100,
+                                 help='Maximum lookback period')
+
+    # Parse arguments
+    args = parser.parse_args()
+
+    # Show help if no command specified
+    if not args.command:
+        parser.print_help()
+        sys.exit(1)
+
+    # Setup logging
+    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+    log_file = args.log_file or f"pairs_trading_{timestamp}.log"
+    logger = setup_logging(args.log_level, log_file)
+
+    try:
+        # Load configuration
+        config = Config(args.config)
+        logger.info(f"Loaded configuration from {args.config}")
+
+        # Override config with command line arguments if provided
+        if hasattr(args, 'symbols') and args.symbols:
+            config.symbols = args.symbols
+
+        # Execute command
+        if args.command == 'find-pairs':
+            find_pairs_command(args, config, logger)
+        elif args.command == 'backtest':
+            backtest_command(args, config, logger)
+        elif args.command == 'analyze':
+            analyze_command(args, config, logger)
+        elif args.command == 'optimize':
+            optimize_command(args, config, logger)
+        else:
+            logger.error(f"Unknown command: {args.command}")
+            sys.exit(1)
+
+    except KeyboardInterrupt:
+        logger.info("Process interrupted by user")
+        sys.exit(0)
+    except Exception as e:
+        logger.error(f"An error occurred: {str(e)}", exc_info=True)
+        sys.exit(1)
+
+    logger.info("Process completed successfully")
+
+
+if __name__ == "__main__":
+    main()
