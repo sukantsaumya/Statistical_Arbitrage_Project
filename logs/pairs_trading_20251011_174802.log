@@ -1,0 +1,6 @@
+2025-10-11 17:48:02,656 - __main__ - ERROR - An error occurred: Config.__init__() missing 2 required positional arguments: 'strategy' and 'backtest'
+Traceback (most recent call last):
+  File "C:\Users\sanja\PycharmProjects\Statistical_Arbitrage_Project\main.py", line 421, in main
+    config = Config(args.config)
+             ^^^^^^^^^^^^^^^^^^^
+TypeError: Config.__init__() missing 2 required positional arguments: 'strategy' and 'backtest'
