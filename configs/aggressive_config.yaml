@@ -1,31 +1,38 @@
 data:
-  # A universe of more volatile, tech-focused growth stocks
-  universe: ['TSLA', 'NVDA', 'AMD', 'SQ', 'COIN', 'SHOP', 'PLTR', 'SNOW', 'U', 'RBLX', 'MSTR']
-  in_sample_start: '2019-01-01'
-  in_sample_end: '2023-12-31'
-  out_sample_start: '2024-01-01'
-  out_sample_end: '2025-10-10' # Use a recent date
+  # **CRITICAL CHANGE**: A large, diverse universe of mature S&P 100 companies.
+  universe: [
+    'AAPL', 'ABBV', 'ABT', 'ACN', 'ADBE', 'AIG', 'AMD', 'AMGN', 'AMT', 'AMZN',
+    'AVGO', 'AXP', 'BA', 'BAC', 'BK', 'BKNG', 'BLK', 'BMY', 'BRK-B', 'C',
+    'CAT', 'CL', 'CMCSA', 'COF', 'COP', 'COST', 'CRM', 'CSCO', 'CVS', 'CVX',
+    'DE', 'DHR', 'DIS', 'DUK', 'EMR', 'FDX', 'GD', 'GE', 'GILD', 'GM',
+    'GOOG', 'GOOGL', 'GS', 'HD', 'HON', 'IBM', 'INTC', 'INTU', 'ISRG', 'JNJ',
+    'JPM', 'KO', 'LIN', 'LLY', 'LMT', 'LOW', 'MA', 'MCD', 'MDLZ', 'MDT',
+    'MET', 'META', 'MMM', 'MO', 'MRK', 'MS', 'MSFT', 'NEE', 'NFLX', 'NKE',
+    'NOW', 'NVDA', 'ORCL', 'PEP', 'PFE', 'PG', 'PM', 'PYPL', 'QCOM', 'RTX',
+    'SBUX', 'SCHW', 'SO', 'SPG', 'T', 'TGT', 'TMO', 'TMUS', 'TSLA', 'TXN',
+    'UBER', 'UNH', 'UNP', 'UPS', 'USB', 'V', 'VZ', 'WFC', 'WMT', 'XOM'
+  ]
+  # Use a longer timeframe to find more stable relationships
+  in_sample_start: '2018-01-01'
+  in_sample_end: '2022-12-31'
+  out_sample_start: '2023-01-01'
+  out_sample_end: '2025-10-10'
   data_source: 'yfinance'
   cache_dir: './data_cache'
 
 strategy:
+  # Keep the aggressive trading thresholds
   significance_level: 0.05
-  # Lower entry threshold to initiate trades more frequently
   entry_z_threshold: 1.5
-  # Lower exit threshold to capture more of the mean reversion
   exit_z_threshold: 0.1
-  # Tighter stop-loss to cut losing trades more quickly in volatile markets
   stop_loss_z_threshold: 2.5
   lookback_period: 60
-  # Focus on pairs that revert more quickly
-  min_half_life: 3.0
-  max_half_life: 60.0
+  min_half_life: 5.0
+  max_half_life: 120.0
 
 backtest:
   initial_capital: 100000.0
   position_size: 0.95
-  # Slightly higher cost assumptions for more volatile stocks
-  transaction_cost_bps: 12.0 # 0.12%
-  slippage_bps: 7.0 # 0.07%
-  # Allow for more simultaneous trades to increase activity
+  transaction_cost_bps: 10.0
+  slippage_bps: 5.0
   max_positions: 10
