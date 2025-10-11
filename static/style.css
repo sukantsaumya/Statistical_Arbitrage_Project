@@ -1,0 +1,52 @@
+:root{
+  --bg: #0f1720;
+  --card: #0f1728;
+  --muted: #9aa7b2;
+  --accent: #2b9af3;
+  --metric: #7ad1ff;
+}
+
+body.app-bg{
+  background: linear-gradient(180deg, #0b1220 0%, #15232f 100%);
+  color: #e6eef6;
+  min-height:100vh;
+  -webkit-font-smoothing:antialiased;
+}
+
+.card-dark{
+  background: linear-gradient(180deg, rgba(17,25,33,0.6), rgba(10,18,22,0.4));
+  border: 1px solid rgba(255,255,255,0.03);
+  box-shadow: 0 6px 18px rgba(2,6,23,0.6);
+  border-radius: 12px;
+}
+
+.form-control-dark{
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.04);
+  color: var(--muted);
+}
+
+.form-control-dark:focus{
+  border-color: var(--accent);
+  box-shadow: 0 0 0 0.15rem rgba(43,154,243,0.12);
+  color: #e6eef6;
+}
+
+.metric-value{
+  font-size:1.25rem;
+  font-weight:700;
+  color: var(--metric);
+}
+
+.table-dark th, .table-dark td{
+  vertical-align: middle;
+}
+
+a.btn-outline-light{
+  border-color: rgba(255,255,255,0.08);
+  color: #e6eef6;
+}
+
+@media (max-width:576px){
+  .container{padding-left:12px;padding-right:12px;}
+}
