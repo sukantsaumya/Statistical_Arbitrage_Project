@@ -1,45 +1,65 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>Statistical Arbitrage Backtester</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css">
-    <style>
-        body { background-color: #2c3e50; color: #ecf0f1; }
-        .container { max-width: 800px; margin-top: 50px; }
-        .card { background-color: #34495e; border: none; }
-        .btn-primary { background-color: #3498db; border-color: #3498db; }
-    </style>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Statistical Arbitrage Backtester</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
-<body>
+<body class="app-bg text-light">
+  <nav class="navbar navbar-dark bg-dark shadow-sm">
     <div class="container">
-        <div class="card p-4">
-            <h1 class="text-center mb-4">Statistical Arbitrage Backtester 📈</h1>
-            <form action="{{ url_for('run_backtest') }}" method="post">
-                <div class="mb-3">
-                    <label for="universe" class="form-label"><b>Stock Tickers (comma-separated)</b></label>
-                    <textarea class="form-control" id="universe" name="universe" rows="3">{{ config.data.universe | join(', ') }}</textarea>
-                </div>
-                <hr class="my-4">
-                <div class="row">
-                    <div class="col-md-4">
-                        <label for="entry_z" class="form-label"><b>Entry Z-Score</b></label>
-                        <input type="number" step="0.1" class="form-control" id="entry_z" name="entry_z" value="{{ config.strategy.entry_z_threshold }}">
-                    </div>
-                    <div class="col-md-4">
-                        <label for="exit_z" class="form-label"><b>Exit Z-Score</b></label>
-                        <input type="number" step="0.1" class="form-control" id="exit_z" name="exit_z" value="{{ config.strategy.exit_z_threshold }}">
-                    </div>
-                    <div class="col-md-4">
-                        <label for="stop_loss_z" class="form-label"><b>Stop Loss Z-Score</b></label>
-                        <input type="number" step="0.1" class="form-control" id="stop_loss_z" name="stop_loss_z" value="{{ config.strategy.stop_loss_z_threshold }}">
-                    </div>
-                </div>
-                <div class="d-grid gap-2 mt-4">
-                    <button type="submit" class="btn btn-primary btn-lg">Run Backtest</button>
-                </div>
-            </form>
-        </div>
+      <a class="navbar-brand" href="{{ url_for('index') }}">Stat Arb Backtester</a>
+      <div class="d-none d-md-block">
+        <a class="link-light" href="https://github.com/sukantsaumya/Statistical_Arbitrage_Project" target="_blank">Repo</a> ·
+        <a class="link-light" href="https://in.linkedin.com/in/sukantsaumya?trk=profile-badge" target="_blank">Sukant Saumya</a>
+      </div>
     </div>
+  </nav>
+
+  <main class="container py-5">
+    <div class="card card-dark p-4 mx-auto" style="max-width:900px;">
+      <h1 class="h3 mb-3 text-center">Statistical Arbitrage — Pairs Trading</h1>
+      <p class="text-center text-muted small">Enter a universe of tickers and strategy thresholds, then run the backtest.</p>
+
+      <form action="{{ url_for('run_backtest') }}" method="post" class="mt-3">
+        <div class="mb-3">
+          <label for="universe" class="form-label">Stock Tickers (comma-separated)</label>
+          <textarea class="form-control form-control-dark" id="universe" name="universe" rows="3" aria-label="Universe of tickers">{{ config.data.universe | join(', ') }}</textarea>
+          <div class="form-text">Example: KO,PEP,MCD,SBUX</div>
+        </div>
+
+        <div class="row g-3">
+          <div class="col-sm-4">
+            <label for="entry_z" class="form-label">Entry Z-Score</label>
+            <input type="number" step="0.1" class="form-control form-control-dark" id="entry_z" name="entry_z" value="{{ config.strategy.entry_z_threshold }}">
+          </div>
+          <div class="col-sm-4">
+            <label for="exit_z" class="form-label">Exit Z-Score</label>
+            <input type="number" step="0.1" class="form-control form-control-dark" id="exit_z" name="exit_z" value="{{ config.strategy.exit_z_threshold }}">
+          </div>
+          <div class="col-sm-4">
+            <label for="stop_loss_z" class="form-label">Stop Loss Z-Score</label>
+            <input type="number" step="0.1" class="form-control form-control-dark" id="stop_loss_z" name="stop_loss_z" value="{{ config.strategy.stop_loss_z_threshold }}">
+          </div>
+        </div>
+
+        <div class="d-flex gap-2 mt-4">
+          <button type="submit" class="btn btn-primary flex-grow-1">Run Backtest</button>
+          <a href="{{ url_for('index') }}" class="btn btn-outline-light">Reset</a>
+        </div>
+      </form>
+      <div class="mt-3 text-muted small">
+        <strong>Tip:</strong> Use the YAML config for advanced options. See README for examples.
+      </div>
+    </div>
+  </main>
+
+  <footer class="text-center py-3 text-muted small">
+    © {{ current_year }} Sukant Saumya — Statistical Arbitrage Project
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
