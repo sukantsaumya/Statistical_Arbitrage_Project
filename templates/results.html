@@ -30,10 +30,10 @@
         <div class="card p-4">
             <h2>Performance Metrics</h2>
             <div class="row">
-                <div class="col-md-3"><strong>Total Return:</strong> <span class="metric-value">{{ "%.2%"|format(metrics.total_return) }}</span></div>
+                <div class="col-md-3"><strong>Total Return:</strong> <span class="metric-value">{{ "%.2f%%"|format(metrics.total_return * 100) }}</span></div>
                 <div class="col-md-3"><strong>Sharpe Ratio:</strong> <span class="metric-value">{{ "%.2f"|format(metrics.sharpe_ratio) }}</span></div>
-                <div class="col-md-3"><strong>Max Drawdown:</strong> <span class="metric-value">{{ "%.2%"|format(metrics.max_drawdown) }}</span></div>
-                <div class="col-md-3"><strong>Win Rate:</strong> <span class="metric-value">{{ "%.1%"|format(metrics.win_rate) }}</span></div>
+                <div class="col-md-3"><strong>Max Drawdown:</strong> <span class="metric-value">{{ "%.2f%%"|format(metrics.max_drawdown * 100) }}</span></div>
+                <div class="col-md-3"><strong>Win Rate:</strong> <span class="metric-value">{{ "%.1f%%"|format(metrics.win_rate * 100) }}</span></div>
             </div>
         </div>
 

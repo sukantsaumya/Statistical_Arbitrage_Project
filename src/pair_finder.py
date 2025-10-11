@@ -25,10 +25,10 @@ class PairStats:
 
     @property
     def is_valid(self) -> bool:
-        """Check if pair meets all criteria (temporarily relaxed for diagnostics)"""
-        # We focus only on the core statistical significance first.
+        """Check if pair meets all criteria"""
         return (self.pvalue < 0.05 and
-                self.adf_pvalue < 0.05)
+                self.adf_pvalue < 0.05 and
+                5 < self.half_life < 120)
 
 
 class PairFinder:

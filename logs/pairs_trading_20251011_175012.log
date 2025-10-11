@@ -1,0 +1,10 @@
+2025-10-11 17:50:12,741 - __main__ - INFO - Loaded configuration from configs/aggressive_config.yaml
+2025-10-11 17:50:12,741 - __main__ - INFO - Starting backtesting process...
+2025-10-11 17:50:12,742 - __main__ - ERROR - An error occurred: 'DataConfig' object is not subscriptable
+Traceback (most recent call last):
+  File "C:\Users\sanja\PycharmProjects\Statistical_Arbitrage_Project\main.py", line 432, in main
+    backtest_command(args, config, logger)
+  File "C:\Users\sanja\PycharmProjects\Statistical_Arbitrage_Project\main.py", line 111, in backtest_command
+    cache_dir=Path(config.data['cache_dir']),
+                   ~~~~~~~~~~~^^^^^^^^^^^^^
+TypeError: 'DataConfig' object is not subscriptable

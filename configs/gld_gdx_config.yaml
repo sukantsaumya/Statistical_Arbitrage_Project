@@ -1,0 +1,30 @@
+data:
+  # A pair linked by direct economic fundamentals
+  universe: ['GLD', 'GDX']
+
+  # Use a long, stable period to establish the relationship
+  in_sample_start: '2013-01-01'
+  in_sample_end: '2019-12-31'
+  # Test the strategy on the volatile period that followed
+  out_sample_start: '2020-01-01'
+  out_sample_end: '2023-12-31'
+
+  data_source: 'yfinance'
+  cache_dir: './data_cache'
+
+strategy:
+  # Standard, conservative parameters
+  significance_level: 0.10
+  entry_z_threshold: 2.0
+  exit_z_threshold: 0.5
+  stop_loss_z_threshold: 3.0
+  lookback_period: 60
+  min_half_life: 5.0
+  max_half_life: 120.0
+
+backtest:
+  initial_capital: 100000.0
+  position_size: 0.95
+  transaction_cost_bps: 10.0
+  slippage_bps: 5.0
+  max_positions: 5
