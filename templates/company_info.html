@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}Company Screener{% endblock %}
+
+{% block content %}
+<div class="card fade-in">
+    <div class="search-header">
+        <h2>Company Screener</h2>
+        <div class="controls-container">
+            <select id="marketSelect" class="form-control">
+                {% for key, market in markets.items() %}
+                    <option value="{{ key }}" {% if key == 'sp500' %}selected{% endif %}>{{ market.name }}</option>
+                {% endfor %}
+            </select>
+            <input type="text" id="searchInput" class="form-control" placeholder="Search by name, ticker, or sector...">
+        </div>
+    </div>
+</div>
+
+<div id="companyGrid" class="company-grid">
+    <p id="loadingMessage" style="color: var(--text-secondary); text-align: center; grid-column: 1 / -1;">Loading company data...</p>
+</div>
+
+<style>
+    .search-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 1rem;
+    }
+    .controls-container {
+        display: flex;
+        gap: 1rem;
+        width: 60%;
+        min-width: 400px;
+    }
+    #marketSelect { width: 40%; }
+    #searchInput { width: 60%; }
+</style>
+{% endblock %}

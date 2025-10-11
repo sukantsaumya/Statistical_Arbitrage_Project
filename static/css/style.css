@@ -1,0 +1,312 @@
+/* static/css/style.css */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+:root {
+    --bg-dark-primary: #0a0e16;
+    --bg-dark-secondary: #131722;
+    --bg-card: #1e222d;
+    --border-color: #2a2e39;
+    --text-primary: #e0e3eb;
+    --text-secondary: #b2b5be;
+    --accent-blue: #2962ff;
+    --accent-green: #00b15d;
+    --accent-red: #ff403a;
+}
+
+/* --- General & Animations --- */
+body {
+    font-family: 'Inter', sans-serif;
+    background-color: var(--bg-dark-primary);
+    color: var(--text-primary);
+    margin: 0;
+    font-size: 16px;
+    overflow-x: hidden;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.fade-in {
+    animation: fadeIn 0.6s ease-out forwards;
+}
+
+/* --- Layout & Navigation --- */
+.container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 1.5rem;
+}
+
+.navbar {
+    background-color: var(--bg-dark-secondary);
+    border-bottom: 1px solid var(--border-color);
+    padding: 1rem 1.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.navbar .logo {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    text-decoration: none;
+}
+
+.nav-links a {
+    color: var(--text-secondary);
+    text-decoration: none;
+    margin-left: 2rem;
+    font-weight: 500;
+    transition: color 0.2s ease;
+}
+
+.nav-links a:hover, .nav-links a.active {
+    color: var(--accent-blue);
+}
+
+/* --- Card & Form Styling --- */
+.card {
+    background-color: var(--bg-card);
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    padding: 2rem;
+    margin-bottom: 2rem;
+}
+
+.card h2 {
+    margin-top: 0;
+    font-size: 1.25rem;
+    font-weight: 600;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.form-label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+}
+
+.form-control {
+    width: 100%;
+    background-color: var(--bg-dark-secondary);
+    border: 1px solid var(--border-color);
+    color: var(--text-primary);
+    padding: 0.75rem 1rem;
+    border-radius: 6px;
+    font-size: 1rem;
+    box-sizing: border-box;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.form-control:focus {
+    outline: none;
+    border-color: var(--accent-blue);
+    box-shadow: 0 0 0 3px rgba(41, 98, 255, 0.2);
+}
+
+.btn-primary {
+    display: block;
+    width: 100%;
+    background: linear-gradient(45deg, var(--accent-blue), #537dff);
+    color: #fff;
+    border: none;
+    padding: 1rem;
+    font-size: 1.1rem;
+    font-weight: 600;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 20px rgba(41, 98, 255, 0.2);
+}
+
+/* --- Company Info Page Styling --- */
+.company-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1.5rem;
+}
+.company-card {
+    background-color: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 1.5rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    transition: transform 0.3s, box-shadow 0.3s;
+}
+.company-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 15px 25px rgba(0,0,0,0.2);
+}
+.company-logo {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    object-fit: contain;
+    background-color: #fff;
+    padding: 5px;
+    margin-bottom: 1rem;
+}
+.company-card h3 {
+    margin: 0; font-size: 1.2rem;
+}
+.company-card .ticker {
+    color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 1rem;
+}
+.company-card .sector {
+    background-color: var(--bg-dark-secondary);
+    color: var(--accent-blue);
+    font-size: 0.8rem;
+    font-weight: 500;
+    padding: 0.25rem 0.75rem;
+    border-radius: 12px;
+}
+
+/* --- Help Section --- */
+.help-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1.5rem;
+}
+.help-card {
+    background-color: var(--bg-dark-secondary);
+    padding: 1.5rem;
+    border-radius: 8px;
+    border-left: 4px solid var(--accent-blue);
+}
+.help-card h4 {
+    margin: 0 0 0.5rem;
+    color: var(--text-primary);
+}
+.help-card p {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    line-height: 1.6;
+}
+
+/* --- Results Page --- */
+.results-header {
+    text-align: center;
+    margin-bottom: 2rem;
+}
+.results-header h2 strong {
+    color: var(--accent-blue);
+}
+
+.metrics-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1.5rem;
+}
+.metric-card {
+    background-color: var(--bg-dark-secondary);
+    padding: 1.5rem;
+    border-radius: 8px;
+}
+.metric-card h3 {
+    margin: 0 0 0.5rem;
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+}
+.metric-card .value {
+    font-size: 2.25rem;
+    font-weight: 700;
+}
+.value.positive { color: var(--accent-green); }
+.value.negative { color: var(--accent-red); }
+
+/* --- Graph Responsiveness --- */
+#plot-div {
+    width: 100%;
+    overflow-x: auto;
+}
+
+.plotly-graph-div {
+    width: 100% !important;
+    height: 100% !important;
+}
+
+/* --- Responsive Design --- */
+@media (max-width: 768px) {
+    .nav-links { display: none; } /* Simple hide for mobile */
+    .container { padding: 1rem; }
+}
+/* static/css/style.css */
+
+/* --- ADD THIS NEW SECTION AT THE END --- */
+
+.featured-section {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 1.5rem;
+    padding: 1.5rem 0;
+    margin-top: 1rem;
+    border-top: 1px solid var(--border-color);
+}
+
+.featured-company {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-decoration: none;
+    color: var(--text-secondary);
+    transition: transform 0.2s ease, color 0.2s ease;
+}
+
+.featured-company:hover {
+    transform: scale(1.05);
+    color: var(--text-primary);
+}
+
+.featured-logo {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    object-fit: contain;
+    background-color: #fff;
+    padding: 5px;
+    margin-bottom: 0.5rem;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+}
+
+.featured-company span {
+    font-size: 0.8rem;
+    font-weight: 500;
+}
+
+.logo-fallback {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background-color: var(--accent-blue);
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+}
+
+.loading-error {
+    color: var(--text-secondary);
+    text-align: center;
+    grid-column: 1 / -1;
+    font-size: 1.1rem;
+    padding: 2rem;
+}
