@@ -1,0 +1,24 @@
+data:
+  universe: ['ADBE', 'GOOGL', 'MSFT', 'CRM', 'ORCL', 'SAP', 'INTU', 'NOW']
+  in_sample_start: '2019-01-01'
+  in_sample_end: '2023-12-31'
+  out_sample_start: '2024-01-01'
+  out_sample_end: '2025-10-10'
+  data_source: 'yfinance'
+  cache_dir: './data_cache'
+
+strategy:
+  significance_level: 0.05
+  entry_z_threshold: 2.0
+  exit_z_threshold: 0.5
+  stop_loss_z_threshold: 3.0
+  lookback_period: 60
+  min_half_life: 5.0
+  max_half_life: 120.0
+
+backtest:
+  initial_capital: 100000.0
+  position_size: 0.95
+  transaction_cost_bps: 10.0
+  slippage_bps: 5.0
+  max_positions: 5
