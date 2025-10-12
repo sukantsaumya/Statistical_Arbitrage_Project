@@ -1,7 +1,15 @@
 """
 Visualization Module for Pairs Trading System
 """
+import matplotlib
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
+# optional seaborn import (if used)
+try:
+    import seaborn as sns
+    sns.set_theme(style='darkgrid')
+except Exception:
+    pass
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 import pandas as pd
