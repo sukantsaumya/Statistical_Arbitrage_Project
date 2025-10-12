@@ -7,3 +7,5 @@ PyYAML
 plotly
 requests
 gunicorn
+matplotlib>=3.6
+
