@@ -52,6 +52,7 @@ The system:
 ├─ main.py                 # CLI entrypoint
 ├─ app.py                  # Flask web server entrypoint
 ├─ requirements.txt
+└─ runtime.txt
 └─ README.md
 ```
 
@@ -201,3 +202,4 @@ Inspired by open-source frameworks like:
 - [QuantConnect](https://www.quantconnect.com/)
 - [Hudson & Thames – mlfinlab](https://hudsonthames.org/)
 - Academic works on Cointegration and Statistical Arbitrage
+
