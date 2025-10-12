@@ -1,0 +1,133 @@
+{% extends "base.html" %}
+{% block title %}About & Learning — Arbitra Lab{% endblock %}
+
+{% block content %}
+<section class="card fade-in learn-hero">
+  <h1>About Arbitra Lab</h1>
+  <p class="muted">
+    Arbitra Lab is a research platform for <strong>Statistical Arbitrage</strong> — 
+    market-neutral strategies that exploit temporary pricing inefficiencies between correlated assets.
+    This page explains the key statistical tools used by the web-app and how to interpret them.
+  </p>
+</section>
+
+<section class="card fade-in learn-section">
+  <h2>1. Pairs Trading Overview</h2>
+  <p>
+    Pairs trading is a <em>market-neutral mean-reversion strategy</em>.
+    It identifies two assets whose prices historically move together (they are <strong>cointegrated</strong>).
+    When the price spread between them widens beyond its normal range, we sell the expensive asset
+    and buy the cheap one, expecting the spread to revert to its mean.
+  </p>
+  <ul class="muted">
+    <li><strong>Goal:</strong> Profit from convergence of temporarily diverging prices.</li>
+    <li><strong>Advantage:</strong> Neutral to overall market direction.</li>
+    <li><strong>Risk:</strong> Structural change — the relationship may break down.</li>
+  </ul>
+</section>
+
+<section class="card fade-in learn-section">
+  <h2>2. Cointegration Tests</h2>
+
+  <h3>Engle–Granger Two-Step Test</h3>
+  <p>
+    The <strong>Engle–Granger Test</strong> (1987) checks whether two non-stationary time series
+    share a long-term equilibrium. It first runs a regression between the series and then tests
+    the residuals for stationarity using the Augmented Dickey-Fuller (ADF) Test.
+  </p>
+  <ul class="muted">
+    <li>Simple and fast — works well for <strong>pairs</strong> of assets.</li>
+    <li>Use when comparing two related securities (e.g., KO vs PEP).</li>
+    <li>Not ideal for more than two series — use Johansen instead.</li>
+  </ul>
+
+  <h3>Johansen Test</h3>
+  <p>
+    The <strong>Johansen Test</strong> (1988) generalizes cointegration analysis
+    to multiple time series. It uses a <em>Vector Error Correction Model (VECM)</em>
+    to find one or more cointegration relationships simultaneously.
+  </p>
+  <ul class="muted">
+    <li>Handles > 2 assets at once.</li>
+    <li>Computationally heavier but statistically more robust.</li>
+    <li>Best for sector baskets or ETF components.</li>
+  </ul>
+
+  <div class="learn-links">
+    <a href="https://towardsdatascience.com/cointegration-in-time-series-analysis-64f3b0a8c66d"
+       target="_blank">📘 Engle–Granger Explained (Towards Data Science)</a><br>
+    <a href="https://www.machinelearningplus.com/time-series/johansen-test-cointegration/"
+       target="_blank">📗 Johansen Test Guide (MachineLearningPlus)</a>
+  </div>
+</section>
+
+<section class="card fade-in learn-section">
+  <h2>3. The Z-Score & Trading Logic</h2>
+  <p>
+    Once a cointegrated pair is identified, we compute the <strong>spread</strong> 
+    between their normalized prices. The <strong>Z-Score</strong> measures how far
+    the current spread deviates from its historical mean:
+  </p>
+  <pre class="code-block">Z = (Spread − Mean(Spread)) / StdDev(Spread)</pre>
+  <p>
+    Typical thresholds:
+  </p>
+  <ul class="muted">
+    <li><strong>Entry Z ≈ ±2</strong> → enter a trade when the spread deviates strongly.</li>
+    <li><strong>Exit Z ≈ 0</strong> → close when the spread reverts to its mean.</li>
+    <li><strong>Stop Loss Z ≈ 3</strong> → cut losses if divergence continues.</li>
+  </ul>
+  <div class="learn-links">
+    <a href="https://www.investopedia.com/terms/z/zscore.asp" target="_blank">📙 Z-Score Definition (Investopedia)</a>
+  </div>
+</section>
+
+<section class="card fade-in learn-section">
+  <h2>4. Performance Metrics</h2>
+  <ul class="muted">
+    <li><strong>Sharpe Ratio:</strong> Return / Volatility; risk-adjusted performance.</li>
+    <li><strong>Sortino Ratio:</strong> Like Sharpe, but penalizes only downside risk.</li>
+    <li><strong>Maximum Drawdown:</strong> Largest peak-to-trough loss.</li>
+    <li><strong>Calmar Ratio:</strong> Annual Return / Max Drawdown.</li>
+  </ul>
+  <div class="learn-links">
+    <a href="https://www.investopedia.com/terms/s/sharperatio.asp" target="_blank">📗 Sharpe Ratio (Investopedia)</a><br>
+    <a href="https://corporatefinanceinstitute.com/resources/wealth-management/drawdown/"
+       target="_blank">📘 Drawdown Explained (CFI)</a>
+  </div>
+</section>
+
+<section class="card fade-in learn-section">
+  <h2>5. Recommended Learning Path</h2>
+  <ol class="muted">
+    <li>Learn basic <strong>time-series stationarity</strong> and ADF tests.</li>
+    <li>Experiment with <strong>Engle–Granger</strong> on small ticker pairs.</li>
+    <li>Progress to <strong>Johansen</strong> for multi-asset baskets.</li>
+    <li>Study <strong>risk management & transaction costs</strong>.</li>
+  </ol>
+  <p>
+    For a deeper dive, see:
+  </p>
+  <ul class="learn-links">
+    <li><a href="https://papers.ssrn.com/sol3/papers.cfm?abstract_id=1509805" target="_blank">📄 Gatev et al. (2006) — Pairs Trading Study</a></li>
+    <li><a href="https://hudsonthames.org" target="_blank">⚙️ Hudson & Thames Quant Research</a></li>
+    <li><a href="https://www.quantconnect.com/docs/v2/research/overview" target="_blank">🧠 QuantConnect Research Notebooks</a></li>
+  </ul>
+</section>
+
+<section class="card fade-in learn-section">
+  <h2>6. Using Arbitra Lab Effectively</h2>
+  <ul class="muted">
+    <li>Use the <em>Engle–Granger test</em> for pair discovery (first pass).</li>
+    <li>Backtest over 3–5 years to reduce noise and overfitting.</li>
+    <li>Experiment with different Z-threshold combinations.</li>
+    <li>Review the equity curve and drawdown plots for robustness.</li>
+  </ul>
+</section>
+
+<section class="card fade-in learn-section">
+  <p class="muted" style="text-align:center;font-size:0.9rem;">
+    © {{ current_year }} Arbitra Lab — Built for quantitative research and learning.
+  </p>
+</section>
+{% endblock %}

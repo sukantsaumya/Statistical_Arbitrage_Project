@@ -1,53 +1,146 @@
 {% extends "base.html" %}
-{% block title %}New Backtest{% endblock %}
+{% block title %}Run New Backtest — Arbitra Lab{% endblock %}
 
 {% block content %}
-<div class="card">
-    <h2>Run a New Backtest</h2>
-    <form action="{{ url_for('run_backtest') }}" method="post">
-        <div class="form-group">
-            <label for="universe" class="form-label">Stock Ticker Universe</label>
-            <textarea class="form-control" id="universe" name="universe" rows="3" placeholder="e.g., GLD, GDX, KO, PEP">{{ config.data.universe | join(', ') }}</textarea>
-        </div>
+<!-- Hero section with aesthetic finance background -->
+<section class="hero-section fade-in">
+  <div class="overlay"></div>
+    <!-- animated stock line (place right after .overlay and before .hero-container) -->
+<svg class="animated-stock" viewBox="0 0 1200 200" preserveAspectRatio="none" aria-hidden="true" focusable="false">
+  <defs>
+    <linearGradient id="lineGrad" x1="0" x2="1">
+      <stop offset="0%" stop-color="rgba(79, 195, 255, 0.14)"/>
+      <stop offset="50%" stop-color="rgba(46, 204, 113, 0.10)"/>
+      <stop offset="100%" stop-color="rgba(127, 80, 255, 0.08)"/>
+    </linearGradient>
 
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1.5rem; margin-bottom: 2rem;">
-            <div class="form-group">
-                <label for="entry_z" class="form-label">Entry Z-Score</label>
-                <input type="number" step="0.1" class="form-control" id="entry_z" name="entry_z" value="{{ config.strategy.entry_z_threshold }}">
-            </div>
-            <div class="form-group">
-                <label for="exit_z" class="form-label">Exit Z-Score</label>
-                <input type="number" step="0.1" class="form-control" id="exit_z" name="exit_z" value="{{ config.strategy.exit_z_threshold }}">
-            </div>
-            <div class="form-group">
-                <label for="stop_loss_z" class="form-label">Stop Loss Z-Score</label>
-                <input type="number" step="0.1" class="form-control" id="stop_loss_z" name="stop_loss_z" value="{{ config.strategy.stop_loss_z_threshold }}">
-            </div>
-        </div>
+    <!-- subtle glow filter -->
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="6" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
 
-        <button type="submit" class="btn-primary">Run Backtest</button>
-    </form>
-</div>
+    <!-- path used for the moving line; you can tweak d for different shapes -->
+    <path id="stockPath" d="M0,140 L80,120 L160,130 L240,90 L320,110 L400,80 L480,96 L560,70 L640,85 L720,60 L800,92 L880,76 L960,100 L1040,72 L1120,88 L1200,60" />
+  </defs>
 
-<div class="card">
-    <h2>Pair Selection Helper</h2>
-    <div class="help-grid">
-        <div class="help-card">
-            <h4>📈 Classic Competitors</h4>
-            <p>Look for companies in the same industry with similar business models. They are often affected by the same market forces. (e.g., KO & PEP, HD & LOW).</p>
-        </div>
-        <div class="help-card">
-            <h4>🔗 Supply Chain Links</h4>
-            <p>Consider companies where one's product is a major input for another. For example, a commodity producer and a manufacturer. (e.g., GLD & GDX).</p>
-        </div>
-        <div class="help-card">
-            <h4>🏦 Sector ETFs</h4>
-            <p>Try pairing a broad market index ETF (like SPY) with a specific sector ETF (like XLF for financials). Their relationship can be mean-reverting.</p>
-        </div>
-        <div class="help-card">
-            <h4>⚠️ Avoid Volatile Stocks</h4>
-            <p>High-growth tech or biotech stocks are often driven by news and hype, not stable economic links. They are poor candidates for this strategy.</p>
-        </div>
+  <!-- background faint stroke -->
+  <use href="#stockPath" stroke="rgba(255,255,255,0.03)" stroke-width="4" fill="none" />
+
+  <!-- main gradient stroked path with glow -->
+  <use href="#stockPath" class="moving-line" stroke="url(#lineGrad)" stroke-width="2.6" fill="none" filter="url(#glow)" stroke-linejoin="round" stroke-linecap="round"/>
+
+  <!-- animated mask: a duplicated path shifted and animated for parallax -->
+  <use href="#stockPath" class="moving-line slow" stroke="rgba(255,255,255,0.02)" stroke-width="6" fill="none" />
+</svg>
+
+  <div class="hero-container">
+    <div class="hero-left">
+      <h1 class="hero-title">Run a New Backtest</h1>
+      <p class="muted">
+        Discover statistically significant pairs, simulate mean-reversion strategies,
+        and evaluate performance with professional-grade analytics.
+      </p>
     </div>
-</div>
+
+    <div class="hero-right">
+      <form id="backtestForm" action="{{ url_for('run_backtest') }}" method="post" novalidate>
+        <label class="form-label" for="test_method">Cointegration Test Method</label>
+        <select id="test_method" name="test_method" class="form-control">
+          <option value="engle_granger" selected>Engle-Granger (Pairs)</option>
+          <option value="johansen">Johansen (Multi-series)</option>
+        </select>
+
+        <label class="form-label mt-3" for="universe">Stock Ticker Universe</label>
+        <textarea id="universe" name="universe" class="form-control" rows="4"
+          placeholder="e.g., KO, PEP, MCD, SBUX">{{ config.data.universe | join(', ') if config and config.data and config.data.universe else '' }}</textarea>
+
+        <!-- Advanced Options -->
+        <div class="advanced-container">
+          <details class="advanced" id="advancedOptions">
+            <summary>
+              <span>Advanced Options</span>
+              <span class="caret">▾</span>
+            </summary>
+
+            <div class="advanced-grid" aria-hidden="false">
+              <!-- Data Window -->
+              <div class="mt-2">
+                <label class="form-label">Data Window (preset)</label>
+                <select id="preset_years" name="preset_years" class="form-control">
+                  <option value="">-- choose preset --</option>
+                  <option value="1">1 year</option>
+                  <option value="3" selected>3 years</option>
+                  <option value="5">5 years</option>
+                  <option value="10">10 years</option>
+                </select>
+              </div>
+
+              <!-- Custom Date Range -->
+              <div class="mt-2">
+                <label class="form-label">Or custom date range</label>
+                <div style="display:flex;gap:.5rem;">
+                  <input type="date" id="start_date" name="start_date" class="form-control">
+                  <input type="date" id="end_date" name="end_date" class="form-control">
+                </div>
+              </div>
+
+              <!-- Out-of-sample -->
+              <div class="mt-2">
+                <label class="form-label">Out-of-sample holdout</label>
+                <select id="out_sample_years" name="out_sample_years" class="form-control">
+                  <option value="1">Last 1 year</option>
+                  <option value="0.5">Last 6 months</option>
+                  <option value="0.25">Last 3 months</option>
+                  <option value="0" selected>No holdout</option>
+                </select>
+              </div>
+
+              <!-- Strategy Params -->
+              <div>
+                <label class="form-label">Entry Z</label>
+                <input type="number" step="0.1" name="entry_z" class="form-control"
+                       value="{{ config.strategy.entry_z_threshold if config and config.strategy and config.strategy.entry_z_threshold is defined else 2.0 }}">
+              </div>
+              <div>
+                <label class="form-label">Exit Z</label>
+                <input type="number" step="0.1" name="exit_z" class="form-control"
+                       value="{{ config.strategy.exit_z_threshold if config and config.strategy and config.strategy.exit_z_threshold is defined else 0.5 }}">
+              </div>
+              <div>
+                <label class="form-label">Stop Loss Z</label>
+                <input type="number" step="0.1" name="stop_loss_z" class="form-control"
+                       value="{{ config.strategy.stop_loss_z_threshold if config and config.strategy and config.strategy.stop_loss_z_threshold is defined else 3.0 }}">
+              </div>
+            </div>
+          </details>
+        </div>
+
+        <div class="form-actions">
+          <button type="submit" class="btn-primary" id="runBtn">Run Backtest</button>
+        </div>
+        <div id="formMsg" class="form-msg muted" aria-live="polite"></div>
+      </form>
+    </div>
+  </div>
+</section>
+
+<!-- Extra info section -->
+<section class="card fade-in featured-section">
+  <div class="featured-block">
+    <h3>Tips</h3>
+    <p class="muted">
+      Start with 6–30 tickers from similar sectors to increase the likelihood of cointegration.
+      Adjust your in-sample and out-of-sample window sizes for optimal testing.
+    </p>
+  </div>
+
+  <div class="featured-block">
+    <h3>Recent Runs</h3>
+    <p class="muted">Your recent reports will appear here after running the backtest.</p>
+  </div>
+</section>
 {% endblock %}

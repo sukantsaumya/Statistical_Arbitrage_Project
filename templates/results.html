@@ -1,56 +1,127 @@
 {% extends "base.html" %}
-{% block title %}Results for {{ pair }}{% endblock %}
+{% block title %}Results — {{ pair }}{% endblock %}
 
 {% block head_scripts %}
-    {{ plot_html|safe }}
+    {# If you prefer Plotly JS in head, keep this. But we inline plot_html inside the page below. #}
 {% endblock %}
 
 {% block content %}
-<div class="results-header">
-    <h2>Backtest Results for Pair: <strong>{{ pair }}</strong></h2>
-</div>
-
-<div class="card">
-    <h3>Performance Metrics</h3>
-    <div class="metrics-grid">
-        <div class="metric-card">
-            <h3>Total Return</h3>
-            <p class="value {% if metrics.total_return > 0 %}positive{% else %}negative{% endif %}">{{ "%.2f"|format(metrics.total_return * 100) }}%</p>
-        </div>
-        <div class="metric-card">
-            <h3>Sharpe Ratio</h3>
-            <p class="value {% if metrics.sharpe_ratio > 1 %}positive{% else %}negative{% endif %}">{{ "%.2f"|format(metrics.sharpe_ratio) }}</p>
-        </div>
-        <div class="metric-card">
-            <h3>Max Drawdown</h3>
-            <p class="value negative">{{ "%.2f"|format(metrics.max_drawdown * 100) }}%</p>
-        </div>
-        <div class="metric-card">
-            <h3>Annualized Return</h3>
-            <p class="value {% if metrics.annualized_return > 0 %}positive{% else %}negative{% endif %}">{{ "%.2f"|format(metrics.annualized_return * 100) }}%</p>
-        </div>
+<section class="card">
+  <div class="d-flex justify-content-between" style="align-items:center;gap:1rem;flex-wrap:wrap;">
+    <div>
+      <h2 class="mb-1">Backtest Results</h2>
+      <p class="muted mb-0">Pair: <strong>{{ pair }}</strong> · Period: <strong>{{ start_date }} → {{ end_date }}</strong></p>
     </div>
-</div>
 
-<div class="card">
-    <h3>Performance Dashboard</h3>
-    <div id="plot-div">
-        </div>
-</div>
+    <div style="display:flex;gap:.5rem;align-items:center;">
+      {% if report_filename %}
+        <a href="{{ url_for('serve_report', filename=report_filename) }}" target="_blank" class="btn-primary" style="padding:.5rem .75rem;">View Full Report</a>
+      {% endif %}
+      {% if export_csv %}
+        <a href="{{ url_for('download_results', filename=export_csv) }}" class="btn-primary" style="padding:.5rem .75rem; background:transparent;border:1px solid rgba(255,255,255,0.06);">Download CSV</a>
+      {% endif %}
+      <a href="{{ url_for('index') }}" class="btn-primary" style="padding:.5rem .75rem; background:transparent;border:1px solid rgba(255,255,255,0.06);">Run Another</a>
+    </div>
+  </div>
+</section>
 
-<div style="text-align: center;">
-    <a href="{{ url_for('index') }}" class="btn-primary" style="text-decoration: none; display: inline-block; width: auto; padding: 1rem 2rem;">Run Another Backtest</a>
-</div>
-<div class="card">
-    <h3>Download Detailed Report</h3>
-    <a href="{{ url_for('serve_report', filename=report_filename) }}" target="_blank" class="btn-primary" style="text-decoration: none; text-align: center;">View Full Report</a>
-</div>
+<section class="card" style="margin-top:1rem;">
+  <h3>Performance Metrics</h3>
+  <div class="metrics-grid" style="margin-top:.75rem;">
+    <div class="metric-card">
+      <small class="muted">Total Return</small>
+      <div class="value {% if metrics.total_return is defined and metrics.total_return > 0 %}positive{% endif %}">
+        {{ "%.2f"|format((metrics.total_return if metrics.total_return is defined else 0) * 100) }}%
+      </div>
+    </div>
+    <div class="metric-card">
+      <small class="muted">Sharpe Ratio</small>
+      <div class="value {% if metrics.sharpe_ratio is defined and metrics.sharpe_ratio > 1 %}positive{% endif %}">
+        {{ "%.2f"|format(metrics.sharpe_ratio if metrics.sharpe_ratio is defined else 0) }}
+      </div>
+    </div>
+    <div class="metric-card">
+      <small class="muted">Max Drawdown</small>
+      <div class="value negative">
+        {{ "%.2f"|format((metrics.max_drawdown if metrics.max_drawdown is defined else 0) * 100) }}%
+      </div>
+    </div>
+    <div class="metric-card">
+      <small class="muted">Annualized Return</small>
+      <div class="value {% if metrics.annualized_return is defined and metrics.annualized_return > 0 %}positive{% endif %}">
+        {{ "%.2f"|format((metrics.annualized_return if metrics.annualized_return is defined else 0) * 100) }}%
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="card" style="margin-top:1rem;">
+  <h3>Performance Dashboard</h3>
+  <div id="plot-div" style="margin-top:.75rem;">
+    {# Inline the full Plotly HTML fragment. Using |safe is necessary because plot_html contains HTML/JS. #}
+    {% if plot_html %}
+      {{ plot_html | safe }}
+    {% else %}
+      <p class="muted">No plot available.</p>
+    {% endif %}
+  </div>
+</section>
+
+<section class="card" style="margin-top:1rem;">
+  <h3>Trade Log (Recent)</h3>
+  {% if trades and trades|length > 0 %}
+    <div class="table-responsive" style="margin-top:.75rem; overflow-x:auto;">
+      <table class="table trades-table" style="width:100%;border-collapse:collapse;">
+        <thead>
+          <tr>
+            <th class="col-date">Date</th>
+            <th class="col-side">Side</th>
+            <th class="col-num">Entry</th>
+            <th class="col-num">Exit</th>
+            <th class="col-num">P&L</th>
+            <th class="col-notes">Notes</th>
+          </tr>
+        </thead>
+        <tbody>
+          {%- for t in trades[-10:]|reverse %}
+          <tr>
+            <td class="date-col">{{ t.date or '-' }}</td>
+            <td class="side-col">{{ t.side or '-' }}</td>
+            <td class="num-col">{{ "%.2f"|format(t.entry_price) if t.entry_price is not none and t.entry_price != '' else '-' }}</td>
+            <td class="num-col">{{ "%.2f"|format(t.exit_price) if t.exit_price is not none and t.exit_price != '' else '-' }}</td>
+            <td class="num-col {% if t.pnl is defined and t.pnl >= 0 %}positive{% else %}negative{% endif %}">{{ "%.2f"|format(t.pnl if t.pnl is not none and t.pnl != '' else 0) }}</td>
+            <td class="notes-col muted small">{{ t.notes or '-' }}</td>
+          </tr>
+          {%- endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <p class="muted" style="margin-top:.5rem;">No trades executed in this backtest period.</p>
+  {% endif %}
+</section>
+
+
+<footer style="margin-top:1.25rem;text-align:center;">
+  <p class="muted small">Generated by Arbitra Lab · {{ current_year if current_year is defined else '' }}</p>
+</footer>
+
+{# No extra JS needed — Plotly HTML contains its own script. If you must relocate the plotly div instead, use the script below. #}
+{% block bottom_scripts %}
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        var plotlyFigure = document.querySelector('.plotly-graph-div');
-        if (plotlyFigure) {
-            document.getElementById('plot-div').appendChild(plotlyFigure);
-        }
-    });
+  // keep this as a safe fallback if plotly injects an element elsewhere
+  document.addEventListener('DOMContentLoaded', function() {
+    // Move an existing .plotly-graph-div into #plot-div if it's not already there
+    try {
+      const existing = document.querySelector('.plotly-graph-div');
+      const target = document.getElementById('plot-div');
+      if (existing && target && !target.contains(existing)) {
+        target.appendChild(existing);
+      }
+    } catch (err) {
+      console.warn('Plot relocation failed:', err);
+    }
+  });
 </script>
+{% endblock %}
 {% endblock %}
