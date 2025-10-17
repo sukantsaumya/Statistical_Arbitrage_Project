@@ -5,6 +5,7 @@
 [![Build](https://img.shields.io/badge/build-passing-brightgreen.svg)](#)
 [![Quantitative Trading](https://img.shields.io/badge/strategy-pairs--trading-orange.svg)](#)
 
+
 > **A modular, professional-grade quantitative trading system** implementing a market-neutral *Statistical Arbitrage (Pairs Trading)* strategy — complete with pair discovery, event-driven backtesting, and performance analytics.  
 > Inspired by research frameworks like **Hudson & Thames’ mlfinlab** and **QuantConnect’s Alpha Framework**.
 
@@ -202,4 +203,5 @@ Inspired by open-source frameworks like:
 - [QuantConnect](https://www.quantconnect.com/)
 - [Hudson & Thames – mlfinlab](https://hudsonthames.org/)
 - Academic works on Cointegration and Statistical Arbitrage
+
 
